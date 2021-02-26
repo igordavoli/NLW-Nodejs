@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { getCustomRepository } from 'typeorm';
-import { SurveysRepository } from '../repositories/SurveysRepositiries';
+import { SurveysRepository } from '../repositories/SurveysRepositories';
 
 class SurveysControeller {
   async crate(req: Request, res: Response) {
