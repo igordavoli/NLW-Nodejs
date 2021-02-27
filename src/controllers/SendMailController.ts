@@ -1,9 +1,9 @@
 import { resolve } from 'path';
 import { Request, Response } from 'express';
 import { getCustomRepository } from 'typeorm';
-import { UsersRepository } from '../repositories/UsersRepositories';
-import { SurveysRepository } from '../repositories/SurveysRepositories';
-import { SurveysUsersRepository } from '../repositories/SurveysUsersRepositories';
+import { UsersRepository } from '../repositories/UsersRepository';
+import { SurveysRepository } from '../repositories/SurveysRepository';
+import { SurveysUsersRepository } from '../repositories/SurveysUsersRepository';
 import SendMailServece from '../services/SendMaileServece';
 
 class SendMailController {
@@ -29,23 +29,32 @@ class SendMailController {
       })
     }
 
+    const hasSurveyUser = await surveysUsersRepository.findOne({
+      where: { user_id: user.id, value: null },
+      relations: ['user', 'survey']
+    });
+
+    if (!hasSurveyUser) {
+      return res.status(400).json({
+        error: 'SurveyUser does not exists'
+      })
+    }
+
     const variables = {
       name: user.name,
       title: survey.title,
       description: survey.description,
-      user_id: user.id,
+      id: "",
       link: process.env.URL_MAIL,
     }
 
     const path = resolve(__dirname, '..', 'views', 'emails', 'npsMail.hbs');
 
-    const hasSurveyUser = await surveysUsersRepository.findOne({
-      where: [{ user_id: user.id }, { value: null }],
-      relations: ['user', 'survey']
-    });
-
     if (hasSurveyUser) {
+      variables.id = hasSurveyUser.id;
+
       await SendMailServece.execute(email, survey.title, variables, path);
+
       return res.status(400).json(hasSurveyUser)
     }
 
@@ -57,6 +66,8 @@ class SendMailController {
     await surveysUsersRepository.save(surveyUser);
 
     //enviar email para usuário
+    variables.id = surveyUser.id;
+
     await SendMailServece.execute(email, survey.title, variables, path);
 
     return res.status(201).json(surveyUser);

@@ -1,7 +1,5 @@
-import { request } from "express";
 import { EntityRepository, Repository } from "typeorm";
 import { Survey } from "../models/surveys";
-import { User } from "../models/User";
 
 @EntityRepository(Survey)
 class SurveysRepository extends Repository<Survey> {
