@@ -4,7 +4,8 @@ import { getCustomRepository } from 'typeorm';
 import { UsersRepository } from '../repositories/UsersRepository';
 import { SurveysRepository } from '../repositories/SurveysRepository';
 import { SurveysUsersRepository } from '../repositories/SurveysUsersRepository';
-import SendMailServece from '../services/SendMaileServece';
+import SendMailService from '../services/SendMaileServece';
+import { AppError } from '../errors/AppError';
 
 class SendMailController {
   async execute(req: Request, res: Response) {
@@ -15,30 +16,22 @@ class SendMailController {
     const surveysUsersRepository = getCustomRepository(SurveysUsersRepository);
 
     const user = await usersRepository.findOne({ email });
-    const survey = await surveysRepository.findOne({ id: survey_id });
 
     if (!user) {
-      return res.status(400).json({
-        error: 'User does not exists',
-      });
+      throw new AppError('User does not exists', 400);
     }
 
+    const survey = await surveysRepository.findOne({ id: survey_id });
+
     if (!survey) {
-      return res.status(400).json({
-        error: 'Survey does not exists'
-      })
-    }
+      throw new AppError('Survey does not exists', 400);
+    };
 
     const hasSurveyUser = await surveysUsersRepository.findOne({
       where: { user_id: user.id, value: null },
       relations: ['user', 'survey']
     });
-
-    if (!hasSurveyUser) {
-      return res.status(400).json({
-        error: 'SurveyUser does not exists'
-      })
-    }
+    const path = resolve(__dirname, '..', 'views', 'emails', 'npsMail.hbs');
 
     const variables = {
       name: user.name,
@@ -48,12 +41,10 @@ class SendMailController {
       link: process.env.URL_MAIL,
     }
 
-    const path = resolve(__dirname, '..', 'views', 'emails', 'npsMail.hbs');
-
     if (hasSurveyUser) {
       variables.id = hasSurveyUser.id;
 
-      await SendMailServece.execute(email, survey.title, variables, path);
+      await SendMailService.execute(email, survey.title, variables, path);
 
       return res.status(400).json(hasSurveyUser)
     }
@@ -68,9 +59,9 @@ class SendMailController {
     //enviar email para usuário
     variables.id = surveyUser.id;
 
-    await SendMailServece.execute(email, survey.title, variables, path);
+    await SendMailService.execute(email, survey.title, variables, path);
 
     return res.status(201).json(surveyUser);
   }
 }
-export { SendMailController }
+export { SendMailController };
