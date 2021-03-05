@@ -20,6 +20,7 @@ class UserController {
     const { name, email } = req.body;
 
     const usersRepository = getCustomRepository(UsersRepository);
+
     //SELECT * FROM users WHERE email= 'email' 
     const userAlreadExists = await usersRepository.findOne({ email })
 
